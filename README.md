@@ -15,7 +15,10 @@ This fork of Christina Harlow's LC reconciliation service just adds support for 
 * Rare Book and Manuscripts Relationship Designators (RBMS-Relators)
 * Library of Congress Medium of Performance Thesaurus for Music (LCMPT)
 
-It's pretty easily extensible if anyone wishes to fork and add support for more vocabularies hosted at id.loc.gov.  The remainder of this README file is just a copy of the README from the original service.
+An additional set of changes affects how the service queries id.loc.gov.  The "Did you mean?" API is no longer supported by id.loc.gov, but a similar API has been created and is called "Suggest2." The current draft of this service performs some basic updates to accommodate the Suggest2 API, but a more thorough restructuring of that component of the reconciliation service will be necessary, since the original service has a complex structure which hard-codes the "Did you mean" queries as either LCSH or LCNAF, rather than having an extensible structure based on the query_index parameter.  
+
+Otherwise, this service is pretty easily extensible if anyone wishes to fork and add support for more vocabularies hosted at id.loc.gov. 
+The remainder of this README file is mostly a copy of the README from the original service.
 
 See **Special Notes**, below, to explain the use of the various [id.loc.gov](http://id.loc.gov) data APIs in this service.
 
