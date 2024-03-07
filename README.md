@@ -2,28 +2,24 @@
 
 ## About
 
-*I stopped using OpenRefine regularly about 4-5 years ago, and I left library technology almost 1 year ago, but I still regularly get emails and issues on these OpenRefine Repositories. So I'm attempting to clean them up for y'all, but no promises on fast repairs or responses.*
+This fork of Christina Harlow's LC reconciliation service just adds support for some additional vocabularies available on id.loc.gov: 
+* Library of Congress Name Authority File (LCNAF)
+* Library of Congress Subject Headings (LCSH)
+* Library of Congress Genre/Form Terms (LCGFT)
+* Thesaurus for Graphic Materials (TGM)
+* RBMS Controlled Vocabulary for Rare Materials Cataloging (RBMSCV)
+* Library of Congress Demographic Group Terms (LCDGT)
+* MARC Languages
+* ISO 639-2 Languages
+* MARC Relators
+* Rare Book and Manuscripts Relationship Designators (RBMS-Relators)
+* Library of Congress Medium of Performance Thesaurus for Music (LCMPT)
 
-An OpenRefine reconciliation service for the Library of Congress Subject Headings (LCSH) and the Library of Congress Name Authority File (LCNAF) available via [id.loc.gov](http://id.loc.gov).
+It's pretty easily extensible if anyone wishes to fork and add support for more vocabularies hosted at id.loc.gov.  The remainder of this README file is just a copy of the README from the original service.
 
 See **Special Notes**, below, to explain the use of the various [id.loc.gov](http://id.loc.gov) data APIs in this service.
 
-See the [OpenRefine Standard Reconciliation Service API documentation](https://reconciliation-api.github.io/specs/0.1/) and [my now very old presentation notes on building an OpenRefine Reconciliation Service](https://github.com/cmh2166/c4lMDCpres)to gather some understanding about what this OpenRefine Reconciliation Service attempts to do.
-
-## Hosted Version Instructions
-
-Hosted version at ... somewhere to be determined.
-
-To run the hosted version:
-
-1. Start OpenRefine.
-2. Find column you want to reconcile.
-3. Go to Reconcile > Start reconciling...
-4. Click on 'Add standard service button' in bottom left corner of reconciliation dialog box that appears.
-5. Enter the service's URL: enter the above URL - TBD
-6. Click Add Service.
-7. /LoC searches LCNAF and LCSH, other options just search the one chosen.
-8. Click 'start reconciling'.
+See the [W3C Reconciliation Service API documentation](https://www.w3.org/community/reports/reconciliation/CG-FINAL-specs-0.1-20230321/) to gather some understanding about what this OpenRefine Reconciliation Service attempts to do.
 
 ## Run Locally Instructions
 
@@ -64,7 +60,7 @@ Let me know if you have questions - email is charlow2(at)utk(dot)edu and Twitter
 Michael Stephens wrote a [demo reconciliation service](https://github.com/mikejs/reconcile-demo) and Ted Lawless wrote a [FAST reconciliation service](https://github.com/lawlesst/fast-reconcile) that this code modifies and builds off of.
 
 All of the access to [id.loc.gov](http://id.loc.gov/) that this OpenRefine Reconciliation service builds off of is
-indebted to those who made/make id.loc.gov an option. Special thanks to Kevin Ford for reaching out and helping with understanding the various id.loc.gov query options.
+indebted to those who made/make id.loc.gov an option. Special thanks to Kevin Ford for reaching out and helping with understanding the various id.loc.gov query options. For this fork, thanks to Christina Harlow for adapting the services of Stephens and Lawless to id.loc.gov -- this fork is just a minor update that incorporates more vocabularies from id.loc.gov.  
 
 ## How This Service Handles Your Query
 
