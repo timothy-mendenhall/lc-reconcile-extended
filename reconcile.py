@@ -46,6 +46,51 @@ refine_to_lc = [
         "id": "Subjects",
         "name": "Library of Congress Subject Headings",
         "index": "/authorities/subjects"
+    },
+    {
+        "id": "LCGFT",
+        "name": "Library of Congress Genre/Form Terms",
+        "index": "/authorities/genreForms"
+    },
+    {
+        "id": "TGM",
+        "name": "Thesaurus for Graphic Materials",
+        "index": "/vocabulary/graphicMaterials"
+    },
+    {
+        "id": "RBMSCV",
+        "name": "RBMS Controlled Vocabulary for Rare Materials Cataloging",
+        "index": "/vocabulary/rbmscv"
+    },
+    {
+        "id": "LCDGT",
+        "name": "Library of Congress Demographic Group Terms",
+        "index": "/authorities/demographicTerms"
+    },
+    {
+        "id": "MARCLang",
+        "name": "MARC Languages",
+        "index": "/vocabulary/languages"
+    },
+    {
+        "id": "ISO639-2Lang",
+        "name": "ISO 639-2 Languages",
+        "index": "/vocabulary/iso639-2"
+    },
+    {
+        "id": "Relators",
+        "name": "MARC relators",
+        "index": "/vocabulary/relators"
+    },
+    {
+        "id": "RBMS-Relators",
+        "name": "Rare Books and Manuscripts Relationship Designators",
+        "index": "/vocabulary/rbmsrel"
+    },
+    {
+        "id": "LCMPT",
+        "name": "Library of Congress Medium of Performance Thesaurus for Music",
+        "index": "/authorities/performanceMediums"
     }
 ]
 refine_to_lc.append(default_query)
@@ -85,22 +130,24 @@ def search(raw_query, query_type='/lc'):
     if query_type_meta == []:
         query_type_meta = default_query
     query_index = query_type_meta[0]['index']
-    # Get the results for the primary suggest API (primary headings, no cross-refs)
+    # Haven't been able to figure out how to search both the Suggest API and the Suggest2 API, along the lines of what the old reconciliation service did.
+    # Get the results for the Suggest2 API (searches authorized headings AND variant headings)
     try:
         if PY3:
-            url = "http://id.loc.gov" + query_index + '/suggest/?q=' + urllib.parse.quote(query.encode('utf8'))
+            url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8'))
         else:
-            url = "http://id.loc.gov" + query_index + '/suggest/?q=' + urllib.quote(query.encode('utf8'))
+            url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.quote(query.encode('utf8'))
         app.logger.debug("LC Authorities API url is " + url)
         resp = requests.get(url)
         results = resp.json()
+        hits = results['hits']
     except getopt.GetoptError as e:
         app.logger.warning(e)
         return out
-    for n in range(0, len(results[1])):
+    for n in hits:
         match = False
-        name = results[1][n]
-        uri = results[3][n]
+        name = n.get('aLabel')
+        uri = n.get('uri')
         score = fuzz.token_sort_ratio(query, name)
         if score > 95:
             match = True
@@ -113,66 +160,7 @@ def search(raw_query, query_type='/lc'):
             "type": query_type_meta
         }
         out.append(resource)
-    # Get the results for the didyoumean API (cross-refs, no primary headings)
-    try:
-        if query_index != '/authorities':
-            if PY3:
-                url = "http://id.loc.gov" + query_index + '/didyoumean/?label=' + urllib.parse.quote(query.encode('utf8'))
-            else:
-                url = "http://id.loc.gov" + query_index + '/didyoumean/?label=' + urllib.quote(query.encode('utf8'))
-            app.logger.debug("LC Authorities API url is " + url)
-            altresp = requests.get(url)
-            altresults = ET.fromstring(altresp.content)
-            altresults2 = None
-        else:
-            if PY3:
-                url = 'http://id.loc.gov/authorities/names/didyoumean/?label=' + urllib.parse.quote(query.encode('utf8'))
-                url2 = 'http://id.loc.gov/authorities/subjects/didyoumean/?label=' + urllib.parse.quote(query.encode('utf8'))
-            else:
-                url = 'http://id.loc.gov/authorities/names/didyoumean/?label=' + urllib.quote(query.encode('utf8'))
-                url2 = 'http://id.loc.gov/authorities/subjects/didyoumean/?label=' + urllib.quote(query.encode('utf8'))
-            app.logger.debug("LC Authorities API url is " + url)
-            app.logger.debug("LC Authorities API url is " + url2)
-            altresp = requests.get(url)
-            altresp2 = requests.get(url2)
-            altresults = ET.fromstring(altresp.content)
-            altresults2 = ET.fromstring(altresp2.content)
-    except getopt.GetoptError as e:
-        app.logger.warning(e)
-        return out
-    for child in altresults.iter('{http://id.loc.gov/ns/id_service#}term'):
-        match = False
-        name = child.text
-        uri = child.get('uri')
-        score = fuzz.token_sort_ratio(query, name)
-        if score > 95:
-            match = True
-        app.logger.debug("Label is " + name + " Score is " + str(score) + " URI is " + uri)
-        resource = {
-            "id": uri,
-            "name": name,
-            "score": score,
-            "match": match,
-            "type": query_type_meta
-        }
-        out.append(resource)
-    if altresults2 is not None:
-        for child in altresults2.iter('{http://id.loc.gov/ns/id_service#}term'):
-            match = False
-            name = child.text
-            uri = child.get('uri')
-            score = fuzz.token_sort_ratio(query, name)
-            if score > 95:
-                match = True
-            app.logger.debug("Label is " + name + " Score is " + str(score) + " URI is " + uri)
-            resource = {
-                "id": uri,
-                "name": name,
-                "score": score,
-                "match": match,
-                "type": query_type_meta
-            }
-            out.append(resource)
+   
     # Sort this list containing preflabels and crossrefs by score
     sorted_out = sorted(out, key=itemgetter('score'), reverse=True)
     # Refine only will handle top three matches.
