@@ -131,6 +131,34 @@ def search(raw_query, query_type='/lc'):
         query_type_meta = default_query
     query_index = query_type_meta[0]['index']
     # Haven't been able to figure out how to search both the Suggest API and the Suggest2 API, along the lines of what the old reconciliation service did.
+    # Get the results for the primary suggest API (primary headings, no cross-refs)
+    try:
+        if PY3:
+            url = "http://id.loc.gov" + query_index + '/suggest/?q=' + urllib.parse.quote(query.encode('utf8'))
+        else:
+            url = "http://id.loc.gov" + query_index + '/suggest/?q=' + urllib.quote(query.encode('utf8'))
+        app.logger.debug("LC Authorities API url is " + url)
+        resp = requests.get(url)
+        results = resp.json()
+    except getopt.GetoptError as e:
+        app.logger.warning(e)
+        return out
+    for n in range(0, len(results[1])):
+        match = False
+        name = results[1][n]
+        uri = results[3][n]
+        score = fuzz.token_sort_ratio(query, name)
+        if score > 95:
+            match = True
+        app.logger.debug("Label is " + name + " Score is " + str(score) + " URI is " + uri)
+        resource = {
+            "id": uri,
+            "name": name,
+            "score": score,
+            "match": match,
+            "type": query_type_meta
+        }
+        out.append(resource)
     # Get the results for the Suggest2 API (searches authorized headings AND variant headings)
     try:
         if PY3:
@@ -163,8 +191,8 @@ def search(raw_query, query_type='/lc'):
    
     # Sort this list containing preflabels and crossrefs by score
     sorted_out = sorted(out, key=itemgetter('score'), reverse=True)
-    # Refine only will handle top three matches.
-    return sorted_out[:3]
+    # Limit results returned--LC might return MANY results for common names / words
+    return sorted_out[:20]
 
 
 @app.route("/", methods=['POST', 'GET'])
