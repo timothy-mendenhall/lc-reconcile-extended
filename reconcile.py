@@ -38,7 +38,7 @@ default_query = {
 
 refine_to_lc = [
     {
-        "id": "Names",
+        "id": "Names--All",
         "name": "Library of Congress Name Authority File",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
@@ -49,49 +49,77 @@ refine_to_lc = [
         "name": "Library of Congress Name Authority File--Personal names only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:PersonalName"
+        "type": "PersonalName"
     },
     {
         "id": "Names--Corporate",
         "name": "Library of Congress Name Authority File--Corporate names only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:CorporateName"
+        "type": "CorporateName"
     },
     {
         "id": "Names--Conference",
         "name": "Library of Congress Name Authority File--Conference names only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:ConferenceName"
+        "type": "ConferenceName"
     },
     {
         "id": "Names--Geographic",
         "name": "Library of Congress Name Authority File--Geographic names only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:Geographic"
+        "type": "Geographic"
     },
     {
         "id": "Names--Titles",
         "name": "Library of Congress Name Authority File--Titles only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:Title"
+        "type": "Title"
     },
     {
         "id": "Names--Name-Titles",
         "name": "Library of Congress Name Authority File--Name-Titles only",
         "index": "/authorities/names",
         "member": "http://id.loc.gov/authorities/names/collection_NamesAuthorizedHeadings",
-        "type": "rdftype:NameTitle"
+        "type": "NameTitle"
     },
     {
-        "id": "Subjects",
+        "id": "Subjects--All",
         "name": "Library of Congress Subject Headings",
         "index": "/authorities/subjects",
         "member": "http://id.loc.gov/authorities/subjects/collection_LCSHAuthorizedHeadings",
         "type": ""
+    },
+    {
+        "id": "Subjects--Topics",
+        "name": "Library of Congress Subject Headings--Topics only",
+        "index": "/authorities/subjects",
+        "member": "http://id.loc.gov/authorities/subjects/collection_LCSHAuthorizedHeadings",
+        "type": "Topic"
+    },
+    {
+        "id": "Subjects--Geographic",
+        "name": "Library of Congress Subject Headings--Geographics only",
+        "index": "/authorities/subjects",
+        "member": "http://id.loc.gov/authorities/subjects/collection_LCSHAuthorizedHeadings",
+        "type": "Geographic"
+    },
+    {
+        "id": "Subjects--Families",
+        "name": "Library of Congress Subject Headings--Families only",
+        "index": "/authorities/subjects",
+        "member": "http://id.loc.gov/authorities/subjects/collection_LCSHAuthorizedHeadings",
+        "type": "FamilyName"
+    },
+    {
+        "id": "Subjects--Corporate",
+        "name": "Library of Congress Subject Headings--Corporate bodies only",
+        "index": "/authorities/subjects",
+        "member": "http://id.loc.gov/authorities/subjects/collection_LCSHAuthorizedHeadings",
+        "type": "CorporateName"
     },
     {
         "id": "LCGFT",
@@ -197,6 +225,10 @@ def search(raw_query, query_type='/lc'):
     query_member = query_type_meta[0]['member']
     query_class = query_type_meta[0]['type']
     # Get the results for the primary Suggest API (primary headings, no cross-refs)
+    # I have removed this feature because in general the Suggest2 API is more powerful
+    # and retaining support for both APIs slows down the service and creates duplicate results
+    # I'm keeping this code here, as it could still be useful; to use both Suggest2 and Suggest APIs,
+    # I would need to add some code to dedupe the results ('out') array
     # try:
     #    url = "http://id.loc.gov" + query_index + '/suggest/?q=' + urllib.parse.quote(query.encode('utf8'))
     #    app.logger.debug("LC Authorities API url is " + url)
@@ -224,10 +256,11 @@ def search(raw_query, query_type='/lc'):
     
     # Get the results for the Suggest2 API (searches authorized headings AND variant headings)
     try:
-        if query_member == "":
-            url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8'))
-        else:
-            url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8')) + '&q=memberOf:' + query_member
+        url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8')) + '&searchtype=keyword&count=50'
+        if len(query_member) > 0:
+            url = url + '&memberOf=' + query_member
+        if len(query_class) > 0:
+            url = url + '&rdftype=' + query_class
         app.logger.debug("LC Authorities API url is " + url)
         resp = requests.get(url)
         results = resp.json()
