@@ -1,5 +1,11 @@
 """
 An OpenRefine reconciliation service for the id.loc.gov LCNAF/LCSH suggest API.
+Originally written by Christina Harlow in 2015.
+Forked by Timothy Ryan Mendenhall in 2024, and updated to
+reflect changes to the APIs at id.loc.gov, as well as to 
+support additional vocabularies at id.loc.gov
+Can easily be extended to support additional vocabularies at id.loc.gov -- 
+just add them to the refine_to_lc array.
 """
 from flask import Flask, request, jsonify
 from fuzzywuzzy import fuzz
@@ -219,11 +225,11 @@ def search(raw_query, query_type='/lc'):
     out = []
     query = text.normalize(raw_query, PY3).strip()
     query_type_meta = [i for i in refine_to_lc if i['id'] == query_type]
-    if query_type_meta == []:
-        query_type_meta = default_query
     query_index = query_type_meta[0]['index']
     query_member = query_type_meta[0]['member']
     query_class = query_type_meta[0]['type']
+    if query_type_meta == []:
+       query_type_meta = default_query
     # Get the results for the primary Suggest API (primary headings, no cross-refs)
     # I have removed this feature because in general the Suggest2 API is more powerful
     # and retaining support for both APIs slows down the service and creates duplicate results
@@ -255,12 +261,18 @@ def search(raw_query, query_type='/lc'):
     #    out.append(resource)
     
     # Get the results for the Suggest2 API (searches authorized headings AND variant headings)
+    # Removed the parameter from the url 'searchtype=keyword' as this was causing unexpected results
+    # Reported the searchtype bug to id.loc.gov staff in Feb. 2025; can restore if LoC staff correct the issue
     try:
-        url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8')) + '&searchtype=keyword&count=50'
+        url = "http://id.loc.gov" + query_index + '/suggest2?q=' + urllib.parse.quote(query.encode('utf8')) + '&count=50'
         if len(query_member) > 0:
             url = url + '&memberOf=' + query_member
+            if len(query_class) > 0:
+                url = url + '&rdftype=' + query_class
         if len(query_class) > 0:
             url = url + '&rdftype=' + query_class
+            if len(query_member) > 0:
+                url = url + '&memberOf=' + query_member
         app.logger.debug("LC Authorities API url is " + url)
         resp = requests.get(url)
         results = resp.json()
@@ -298,15 +310,15 @@ def reconcile():
     # should return a dictionary of (key, results) pairs.
     queries = request.form.get('queries')
     if queries:
-        queries = json.loads(queries)
-        results = {}
-        for (key, query) in queries.items():
-            qtype = query.get('type')
-            if qtype is None:
-                return jsonpify(metadata)
-            data = search(query['query'], query_type=qtype)
-            results[key] = {"result": data}
-        return jsonpify(results)
+       queries = json.loads(queries)
+       results = {}
+       for (key, query) in queries.items():
+           qtype = query.get('type')
+           if qtype is None:
+               return jsonpify(metadata)
+           data = search(query['query'], query_type=qtype)
+           results[key] = {"result": data}
+       return jsonpify(results)
     # If neither a 'query' nor 'queries' parameter is supplied then
     # we should return the service metadata.
     return jsonpify(metadata)
